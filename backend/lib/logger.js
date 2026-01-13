@@ -67,10 +67,8 @@ export const logger = {
 export const requestLogger = (req, res, next) => {
   const start = Date.now();
   
-  // Log request
   logger.request(req);
   
-  // Log response when finished
   res.on('finish', () => {
     const duration = Date.now() - start;
     const statusColor = res.statusCode >= 400 ? colors.red : colors.green;

@@ -95,5 +95,5 @@ export const CLOUDINARY_FOLDERS = {
 
 export const TOKEN_CONFIG = {
   EXPIRES_IN: '7d',
-  COOKIE_MAX_AGE: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+  COOKIE_MAX_AGE: 7 * 24 * 60 * 60 * 1000
 };

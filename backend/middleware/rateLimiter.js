@@ -1,5 +1,4 @@
 // Simple in-memory rate limiter
-// For production, consider using Redis or a proper rate limiting library
 
 const rateLimitStore = new Map();
 
@@ -15,8 +14,8 @@ setInterval(() => {
 
 export const createRateLimiter = (options = {}) => {
   const {
-    windowMs = 15 * 60 * 1000, // 15 minutes
-    maxRequests = 100, // Max requests per window
+    windowMs = 15 * 60 * 1000,
+    maxRequests = 100,
     message = 'Too many requests, please try again later.'
   } = options;
 
@@ -71,21 +70,21 @@ export const createRateLimiter = (options = {}) => {
   };
 };
 
-// Predefined rate limiters for different use cases
+// Predefined rate limiters
 export const authRateLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 5, // 5 login attempts
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 5,
   message: 'Too many authentication attempts, please try again after 15 minutes.'
 });
 
 export const apiRateLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 100, // 100 requests
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 100,
   message: 'Too many requests, please try again later.'
 });
 
 export const uploadRateLimiter = createRateLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  maxRequests: 10, // 10 uploads per hour
+  windowMs: 60 * 60 * 1000,
+  maxRequests: 10,
   message: 'Too many uploads, please try again later.'
 });
