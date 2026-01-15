@@ -2,52 +2,41 @@ import { supabase } from '../lib/supabase.config.js';
 import cloudinary from '../lib/cloudinary.js';
 
 export const signup = async (req, res) => {
-  const { email, fullName, password, userType } = req.body; // userType: 'candidate' or 'company'
-  
+  const { email, fullName, password, userType } = req.body;
+
+  console.log("REQ BODY:", req.body);
   try {
-    // Validate inputs
-    if (!email || !fullName || !password || !userType) {
+    if (!fullName || !password || !userType) {
       return res.status(400).json({ message: "All fields are required" });
     }
-    
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters long" });
-    }
-    
+
     if (!['candidate', 'company'].includes(userType)) {
       return res.status(400).json({ message: "Invalid user type" });
     }
 
-    // Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          user_type: userType
-        }
-      }
-    });
+    // 1️⃣ Create auth user
+    const { data: authData, error: authError } =
+      await supabase.auth.signUp({
+        email,
+        password
+      });
 
     if (authError) {
       return res.status(400).json({ message: authError.message });
     }
 
-    // Insert additional user data into profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .insert([
-        {
-          id: authData.user.id,
-          email,
-          full_name: fullName,
-          user_type: userType,
-          profile_pic: ''
-        }
-      ])
-      .select()
-      .single();
+    // 2️⃣ Create profile (NO email column)
+    const { data: profile, error: profileError } =
+  await supabase.from('profiles')
+    .insert({
+      id: authData.user.id,
+      email: authData.user.email,   // 🔥 REQUIRED LINE
+      full_name: fullName,
+      user_type: userType
+    })
+    .select()
+    .single();
+
 
     if (profileError) {
       return res.status(400).json({ message: profileError.message });
@@ -55,19 +44,19 @@ export const signup = async (req, res) => {
 
     res.status(201).json({
       user: authData.user,
-      session: authData.session,
       profile
     });
 
   } catch (error) {
-    console.error("Error in signup:", error);
+    console.error("Signup error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
-  
+  console.log("BODY:", req.body);
+
   try {
     if (!email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -80,7 +69,7 @@ export const login = async (req, res) => {
     });
 
     if (error) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: error.message });
     }
 
     // Get user profile
@@ -108,36 +97,35 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (token) {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        return res.status(400).json({ message: error.message });
-      }
-    }
-
-    res.status(200).json({ message: "Logged out successfully" });
+    return res.status(200).json({
+      message: "Logged out successfully"
+    });
   } catch (error) {
     console.error("Error in logout:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
+
 export const updateProfile = async (req, res) => {
   try {
     const { profilePic } = req.body;
-    const userId = req.user.id;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
     if (!profilePic) {
       return res.status(400).json({ message: "Profile picture is required" });
     }
 
+    const userId = req.user.id;
+
     // Upload to Cloudinary
     const uploadResponse = await cloudinary.uploader.upload(profilePic);
 
-    // Update profile in Supabase
-    const { data: updatedProfile, error } = await supabase
+    // Update profile
+    const { data, error } = await supabase
       .from('profiles')
       .update({ profile_pic: uploadResponse.secure_url })
       .eq('id', userId)
@@ -148,7 +136,7 @@ export const updateProfile = async (req, res) => {
       return res.status(400).json({ message: error.message });
     }
 
-    res.status(200).json(updatedProfile);
+    res.status(200).json(data);
   } catch (error) {
     console.error("Error in updateProfile:", error);
     res.status(500).json({ message: "Server error" });
