@@ -16,7 +16,7 @@ export const protectRoute = async (req, res, next) => {
     if (error || !user) {
       return res.status(401).json({ message: "Unauthorized - Invalid token" });
     }
-
+    req.supabaseToken = token;
     req.user = user;
     next();
   } catch (error) {

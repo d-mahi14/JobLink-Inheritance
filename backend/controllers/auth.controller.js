@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase.config.js';
-import cloudinary from '../lib/cloudinary.js';
+import { uploadToSupabase } from '../lib/supabaseStorage.js';
 
 export const signup = async (req, res) => {
   const { email, fullName, password, userType } = req.body;
@@ -15,28 +15,26 @@ export const signup = async (req, res) => {
     }
 
     // 1️⃣ Create auth user
-    const { data: authData, error: authError } =
-      await supabase.auth.signUp({
-        email,
-        password
-      });
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password
+    });
 
     if (authError) {
       return res.status(400).json({ message: authError.message });
     }
 
-    // 2️⃣ Create profile (NO email column)
-    const { data: profile, error: profileError } =
-  await supabase.from('profiles')
-    .insert({
-      id: authData.user.id,
-      email: authData.user.email,   // 🔥 REQUIRED LINE
-      full_name: fullName,
-      user_type: userType
-    })
-    .select()
-    .single();
-
+    // 2️⃣ Create profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: authData.user.id,
+        email: authData.user.email,
+        full_name: fullName,
+        user_type: userType
+      })
+      .select()
+      .single();
 
     if (profileError) {
       return res.status(400).json({ message: profileError.message });
@@ -106,7 +104,6 @@ export const logout = async (req, res) => {
   }
 };
 
-
 export const updateProfile = async (req, res) => {
   try {
     const { profilePic } = req.body;
@@ -121,13 +118,17 @@ export const updateProfile = async (req, res) => {
 
     const userId = req.user.id;
 
-    // Upload to Cloudinary
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
+    // Upload to Supabase Storage
+    const uploadResult = await uploadToSupabase(
+      profilePic, 
+      'profile-pictures',
+      `profile_${userId}_${Date.now()}`
+    );
 
     // Update profile
     const { data, error } = await supabase
       .from('profiles')
-      .update({ profile_pic: uploadResponse.secure_url })
+      .update({ profile_pic: uploadResult.publicUrl })
       .eq('id', userId)
       .select()
       .single();
