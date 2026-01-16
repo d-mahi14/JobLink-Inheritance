@@ -4,15 +4,17 @@ import { config } from 'dotenv';
 config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
+if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
+// Admin client with service role key (bypasses RLS)
 export const supabase = createClient(
   supabaseUrl,
-  supabaseKey,
+  supabaseServiceKey,
   {
     auth: {
       persistSession: false,
@@ -22,7 +24,30 @@ export const supabase = createClient(
   }
 );
 
-// Helper
+// User-scoped client factory
+export const getUserSupabase = (token) => {
+  if (!token) {
+    throw new Error('Authentication token is required');
+  }
+  
+  return createClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    }
+  );
+};
+
+// Helper to get user from token
 export const getUserFromToken = async (token) => {
   const { data: { user }, error } = await supabase.auth.getUser(token);
   if (error) throw error;
