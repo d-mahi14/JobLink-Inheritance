@@ -32,7 +32,7 @@ export const getUserSupabase = (token) => {
   
   return createClient(
     supabaseUrl,
-    supabaseAnonKey,
+    supabaseServiceKey,
     {
       global: {
         headers: {

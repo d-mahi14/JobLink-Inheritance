@@ -145,6 +145,7 @@ export const updateResumeAnalysis = async (req, res) => {
   }
 };
 
+
 /**
  * Delete resume
  */

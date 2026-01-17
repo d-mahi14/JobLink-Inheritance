@@ -149,16 +149,19 @@ export const updateApplicationStatus = async (req, res) => {
     if (appError || application.job_postings.company_id !== companyId) {
       return res.status(403).json({ message: "Unauthorized" });
     }
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
 
     const updateData = { status };
-    if (matchScore !== undefined) updateData.match_score = matchScore;
+    if (matchScore !== undefined) updateData.match_score = Number(matchScore);
 
     const { data: updatedApplication, error } = await supabase
       .from('applications')
       .update(updateData)
       .eq('id', applicationId)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       return res.status(400).json({ message: error.message });
@@ -223,17 +226,28 @@ export const withdrawApplication = async (req, res) => {
     const { applicationId } = req.params;
     const candidateId = req.user.id;
 
-    const { error } = await supabase
+    // Delete the application and return the deleted row(s)
+    const { data, error } = await supabase
       .from('applications')
       .delete()
       .eq('id', applicationId)
-      .eq('candidate_id', candidateId);
+      .eq('candidate_id', candidateId)
+      .select(); // Important: get deleted rows
 
     if (error) {
       return res.status(400).json({ message: error.message });
     }
 
-    res.status(200).json({ message: "Application withdrawn successfully" });
+    if (!data || data.length === 0) {
+      return res.status(404).json({ 
+        message: "Application not found or you are not authorized to delete it" 
+      });
+    }
+
+    res.status(200).json({ 
+      message: "Application withdrawn successfully",
+      deletedApplication: data[0] // optional, can remove if you don’t want to expose
+    });
   } catch (error) {
     console.error("Error in withdrawApplication:", error);
     res.status(500).json({ message: "Server error" });
