@@ -1,65 +1,129 @@
-import { User, FileText, Calendar, Download } from 'lucide-react';
+import { User, FileText, Calendar, Download, Award } from 'lucide-react';
 import { formatDate } from '../../utils/formatters';
-import Badge from '../shared/Badge';
 import { useApplicationStore } from '../../store/applicationStore';
 import { useState } from 'react';
 
 const ApplicationReviewCard = ({ application }) => {
+  if (!application) return null;
+
   const [status, setStatus] = useState(application.status);
-  const [matchScore, setMatchScore] = useState(application.match_score || '');
+  const [matchScore, setMatchScore] = useState(application.match_score ?? '');
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const { updateApplicationStatus } = useApplicationStore();
 
   const handleUpdateStatus = async () => {
-  try {
-    await updateApplicationStatus(application.id, status, matchScore);
-  } catch (error) {
-    console.error('Update status failed:', error);
-  }
-};
+    setIsUpdating(true);
+    try {
+      await updateApplicationStatus(
+        application.id,
+        status,
+        matchScore === '' ? null : Number(matchScore)
+      );
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
+  const statusColors = {
+    pending: 'warning',
+    reviewed: 'info',
+    shortlisted: 'success',
+    rejected: 'danger',
+    accepted: 'primary',
+  };
 
   return (
-    <div className="card bg-base-100 shadow-xl">
+    <div className="card border shadow-sm">
       <div className="card-body">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="avatar placeholder">
-              <div className="bg-primary text-white rounded-full w-12">
-                {application.profiles?.profile_pic ? (
-                  <img src={application.profiles.profile_pic} alt="Candidate" />
-                ) : (
-                  <span>{application.profiles?.full_name?.charAt(0)}</span>
-                )}
+
+        {/* Header */}
+        <div className="d-flex justify-content-between align-items-start mb-3">
+          <div className="d-flex gap-3 align-items-center">
+            {application.profiles?.profile_pic ? (
+              <img
+                src={application.profiles.profile_pic}
+                alt="Candidate"
+                className="rounded-circle"
+                style={{ width: 60, height: 60, objectFit: 'cover' }}
+              />
+            ) : (
+              <div
+                className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                style={{ width: 60, height: 60 }}
+              >
+                <User size={28} />
               </div>
-            </div>
+            )}
+
             <div>
-              <h3 className="font-bold">{application.profiles?.full_name}</h3>
-              <p className="text-sm text-gray-500">{application.profiles?.email}</p>
+              <h5 className="mb-1 fw-bold">
+                {application.profiles?.full_name}
+              </h5>
+              <p className="mb-0 small text-muted">
+                {application.profiles?.email}
+              </p>
             </div>
           </div>
-          <Badge status={application.status} />
+
+          <span className={`badge bg-${statusColors[status]} text-uppercase`}>
+            {status}
+          </span>
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-gray-500 mt-3">
-          <div className="flex items-center gap-1">
-            <Calendar className="w-4 h-4" />
+        {/* Meta info */}
+        <div className="row g-2 small text-muted mb-3">
+          <div className="col-md-6">
+            <Calendar size={14} className="me-2" />
             Applied {formatDate(application.applied_at)}
           </div>
-          <div className="flex items-center gap-1">
-            <FileText className="w-4 h-4" />
+          <div className="col-md-6">
+            <FileText size={14} className="me-2" />
             {application.resumes?.file_name}
           </div>
         </div>
 
-        <div className="divider"></div>
+        {/* Skills */}
+        {application.resumes?.analysis_data?.skills && (
+          <div className="mb-3">
+            <h6 className="fw-bold mb-2">
+              <Award size={16} className="me-2" />
+              Extracted Skills
+            </h6>
+            <div className="d-flex flex-wrap gap-1">
+              {application.resumes.analysis_data.skills.map((skill, idx) => (
+                <span key={idx} className="badge bg-light text-dark border">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Status</span>
-            </label>
+        {/* Match score */}
+        {matchScore !== '' && (
+          <div className="mb-3">
+            <div className="d-flex justify-content-between mb-1">
+              <small className="fw-semibold">Match Score</small>
+              <small className="fw-bold text-primary">{matchScore}%</small>
+            </div>
+            <div className="progress" style={{ height: 8 }}>
+              <div
+                className="progress-bar bg-primary"
+                style={{ width: `${matchScore}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <hr />
+
+        {/* Actions */}
+        <div className="row g-3">
+          <div className="col-md-6">
+            <label className="form-label small fw-semibold">Update Status</label>
             <select
-              className="select select-bordered select-sm"
+              className="form-select form-select-sm"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
@@ -71,34 +135,38 @@ const ApplicationReviewCard = ({ application }) => {
             </select>
           </div>
 
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Match Score (0-100)</span>
+          <div className="col-md-6">
+            <label className="form-label small fw-semibold">
+              Match Score (0–100)
             </label>
             <input
               type="number"
               min="0"
               max="100"
-              className="input input-bordered input-sm"
+              className="form-control form-control-sm"
               value={matchScore}
               onChange={(e) => setMatchScore(e.target.value)}
-              placeholder="Enter score"
             />
           </div>
         </div>
 
-        <div className="card-actions justify-between mt-4">
+        <div className="d-flex justify-content-between mt-3">
           <a
             href={application.resumes?.resume_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-sm btn-ghost"
+            className="btn btn-sm btn-outline-secondary"
           >
-            <Download className="w-4 h-4" />
+            <Download size={16} className="me-1" />
             Download Resume
           </a>
-          <button onClick={handleUpdateStatus} className="btn btn-sm btn-primary">
-            Update Status
+
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={handleUpdateStatus}
+            disabled={isUpdating}
+          >
+            {isUpdating ? 'Updating…' : 'Update Status'}
           </button>
         </div>
       </div>

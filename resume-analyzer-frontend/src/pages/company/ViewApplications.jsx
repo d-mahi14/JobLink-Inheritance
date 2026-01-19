@@ -24,7 +24,9 @@ const ViewApplications = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{currentJob?.title || 'Job Applications'}</h1>
+        <h1 className="text-3xl font-bold">
+          {currentJob?.title || 'Job Applications'}
+        </h1>
         <p className="text-gray-500 mt-1">
           Review and manage applications for this position
         </p>
@@ -38,8 +40,11 @@ const ViewApplications = () => {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {jobApplications.filter(Boolean).map((application) => (
-            <ApplicationReviewCard key={application.id} application={application} />
+          {jobApplications.map((application) => (
+            <ApplicationReviewCard
+              key={application.id}
+              application={application}
+            />
           ))}
         </div>
       )}

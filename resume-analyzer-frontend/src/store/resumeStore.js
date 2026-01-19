@@ -1,24 +1,59 @@
 import { create } from 'zustand';
 import { resumesAPI } from '../api/resumes.api';
+import { extractSkillsFromResume } from '../utils/skillsExtractor';
 import toast from 'react-hot-toast';
 
 export const useResumeStore = create((set, get) => ({
   resumes: [],
   currentResume: null,
   isLoading: false,
+  isAnalyzing: false,
 
   uploadResume: async (resumeFile, fileName) => {
     set({ isLoading: true });
     try {
+      // Upload resume first
       const resume = await resumesAPI.uploadResume(resumeFile, fileName);
-      set({ resumes: [resume, ...get().resumes] });
-      toast.success('Resume uploaded successfully!');
-      return resume;
+      
+      // Show analyzing toast
+      const analyzingToast = toast.loading('Analyzing resume and extracting skills...');
+      set({ isAnalyzing: true });
+      
+      try {
+        // Extract skills using AI (mock for now)
+        const skills = await extractSkillsFromResume(fileName);
+        
+        // Update resume with extracted skills
+        const analysisData = {
+          skills: skills,
+          extractedAt: new Date().toISOString(),
+          score: Math.floor(Math.random() * 30) + 70, // Mock score 70-100
+        };
+        
+        const updatedResume = await resumesAPI.updateResumeAnalysis(
+          resume.id,
+          analysisData
+        );
+        
+        toast.success('Resume uploaded and analyzed successfully!', {
+          id: analyzingToast,
+        });
+        
+        set({ resumes: [updatedResume, ...get().resumes] });
+        return updatedResume;
+      } catch (analysisError) {
+        console.error('Skills extraction failed:', analysisError);
+        toast.error('Resume uploaded but skills analysis failed', {
+          id: analyzingToast,
+        });
+        set({ resumes: [resume, ...get().resumes] });
+        return resume;
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Upload failed');
       throw error;
     } finally {
-      set({ isLoading: false });
+      set({ isLoading: false, isAnalyzing: false });
     }
   },
 
@@ -68,7 +103,6 @@ export const useResumeStore = create((set, get) => ({
           r.id === resumeId ? updated : r
         ),
       });
-      toast.success('Analysis updated');
       return updated;
     } catch (error) {
       toast.error('Failed to update analysis');

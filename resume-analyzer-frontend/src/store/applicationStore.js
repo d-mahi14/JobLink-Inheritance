@@ -64,6 +64,7 @@ export const useApplicationStore = create((set, get) => ({
     }
   },
 
+  // FIX: Update both local state AND refetch from server
   updateApplicationStatus: async (applicationId, status, matchScore) => {
     try {
       const updated = await applicationsAPI.updateApplicationStatus(
@@ -71,12 +72,15 @@ export const useApplicationStore = create((set, get) => ({
         status,
         matchScore
       );
+      
+      // Update the local state immediately
       set({
-        jobApplications: get().jobApplications
-  .     filter(Boolean)
-        .map((a) => (a.id === applicationId ? updated : a)),
+        jobApplications: get().jobApplications.map((a) =>
+          a.id === applicationId ? { ...a, ...updated } : a
+        ),
       });
-      toast.success('Application status updated');
+      
+      toast.success('Application status updated successfully');
       return updated;
     } catch (error) {
       toast.error('Failed to update status');
@@ -85,19 +89,15 @@ export const useApplicationStore = create((set, get) => ({
   },
 
   withdrawApplication: async (applicationId) => {
-  try {
-    await applicationsAPI.withdrawApplication(applicationId);
-    set({
-      myApplications: get().myApplications.filter((a) => a.id !== applicationId),
-    });
-    toast.success('Application withdrawn');
-  } catch (error) {
-    // ADD THESE TWO LINES
-    console.error("Withdrawal Error Details:", error);
-    console.log("Error Response Data:", error.response?.data);
-    
-    toast.error('Failed to withdraw application');
-    throw error;
-  }
-},
+    try {
+      await applicationsAPI.withdrawApplication(applicationId);
+      set({
+        myApplications: get().myApplications.filter((a) => a.id !== applicationId),
+      });
+      toast.success('Application withdrawn');
+    } catch (error) {
+      toast.error('Failed to withdraw application');
+      throw error;
+    }
+  },
 }));

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, FileText } from 'lucide-react';
+import { Upload, FileText, X } from 'lucide-react';
 import { useResumeStore } from '../../store/resumeStore';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { validateFile } from '../../utils/validators';
@@ -7,12 +7,19 @@ import toast from 'react-hot-toast';
 
 const ResumeUpload = () => {
   const [selectedFile, setSelectedFile] = useState(null);
-  const { uploadResume } = useResumeStore();
+  const { uploadResume, resumes } = useResumeStore();
   const { uploadFile, isUploading } = useFileUpload();
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Check if user already has a resume
+    if (resumes.length >= 1) {
+      toast.error('You can only upload 1 resume. Please delete the existing one first.');
+      e.target.value = null;
+      return;
+    }
 
     const errors = validateFile(file);
     if (errors.length > 0) {
@@ -34,51 +41,87 @@ const ResumeUpload = () => {
         await uploadResume(base64, selectedFile.name);
       });
       setSelectedFile(null);
+      // Reset file input
+      document.getElementById('resume-input').value = null;
     } catch (error) {
       console.error('Upload failed:', error);
     }
   };
 
+  const clearSelection = () => {
+    setSelectedFile(null);
+    document.getElementById('resume-input').value = null;
+  };
+
+  // Don't show upload form if already has a resume
+  if (resumes.length >= 1) {
+    return (
+      <div className="alert alert-info d-flex align-items-center">
+        <FileText className="me-2" size={20} />
+        <div>
+          <strong>Resume limit reached</strong>
+          <p className="mb-0 small">You can only upload 1 resume. Delete your existing resume to upload a new one.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="card bg-base-100 shadow-xl">
+    <div className="card border shadow-sm">
       <div className="card-body">
-        <h2 className="card-title">Upload New Resume</h2>
+        <h5 className="card-title mb-3">
+          <Upload size={20} className="me-2" />
+          Upload Your Resume
+        </h5>
         
-        <label className="form-control w-full">
-          <div className="label">
-            <span className="label-text">Select Resume File (PDF, DOC, DOCX - Max 5MB)</span>
-          </div>
+        <div className="mb-3">
+          <label className="form-label small fw-semibold">
+            Select Resume File (PDF, DOC, DOCX - Max 5MB)
+          </label>
           <input
+            id="resume-input"
             type="file"
-            className="file-input file-input-bordered w-full"
+            className="form-control"
             accept=".pdf,.doc,.docx"
             onChange={handleFileSelect}
           />
-        </label>
+          <div className="form-text">
+            Only PDF and Word documents are supported
+          </div>
+        </div>
 
         {selectedFile && (
-          <div className="alert alert-info mt-4">
-            <FileText className="w-5 h-5" />
-            <span>Selected: {selectedFile.name}</span>
+          <div className="alert alert-primary d-flex justify-content-between align-items-center">
+            <div className="d-flex align-items-center">
+              <FileText size={20} className="me-2" />
+              <span className="small">{selectedFile.name}</span>
+            </div>
+            <button 
+              onClick={clearSelection}
+              className="btn btn-sm btn-outline-danger"
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
 
-        <div className="card-actions justify-end mt-4">
-          <button
-            onClick={handleUpload}
-            className="btn btn-primary"
-            disabled={!selectedFile || isUploading}
-          >
-            {isUploading ? (
-              <span className="loading loading-spinner"></span>
-            ) : (
-              <>
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Resume
-              </>
-            )}
-          </button>
-        </div>
+        <button
+          onClick={handleUpload}
+          className="btn btn-primary w-100"
+          disabled={!selectedFile || isUploading}
+        >
+          {isUploading ? (
+            <>
+              <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+              Uploading & Analyzing...
+            </>
+          ) : (
+            <>
+              <Upload size={16} className="me-2" />
+              Upload & Analyze Resume
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

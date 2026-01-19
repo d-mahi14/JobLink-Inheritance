@@ -1,55 +1,65 @@
-import { FileText, Download, Trash2, Calendar } from 'lucide-react';
+import { FileText, Download, Trash2, Calendar, Award } from 'lucide-react';
 import { formatDate, formatFileSize } from '../../utils/formatters';
 import { useResumeStore } from '../../store/resumeStore';
+import SkillsDisplay from './SkillsDisplay';
 
 const ResumeCard = ({ resume }) => {
   const { deleteResume } = useResumeStore();
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this resume?')) {
+    if (window.confirm('Are you sure you want to delete this resume? This will also remove all extracted skills.')) {
       await deleteResume(resume.id);
     }
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl">
+    <div className="card border shadow-sm mb-3">
       <div className="card-body">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary text-white p-3 rounded-lg">
-              <FileText className="w-6 h-6" />
+        <div className="d-flex align-items-start justify-content-between mb-3">
+          <div className="d-flex align-items-center gap-3">
+            <div className="bg-primary text-white p-3 rounded">
+              <FileText size={24} />
             </div>
             <div>
-              <h3 className="card-title text-lg">{resume.file_name}</h3>
-              <p className="text-sm text-gray-500">
+              <h5 className="card-title mb-1">{resume.file_name}</h5>
+              <p className="text-muted small mb-0">
                 {formatFileSize(resume.file_size)}
               </p>
             </div>
           </div>
           {resume.analysis_data?.score && (
-            <div className="radial-progress text-primary" style={{"--value": resume.analysis_data.score}}>
+            <div 
+              className="position-relative d-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold"
+              style={{ width: '60px', height: '60px' }}
+            >
               {resume.analysis_data.score}%
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-gray-500 mt-2">
-          <Calendar className="w-4 h-4" />
+        <div className="d-flex align-items-center gap-2 text-muted small mb-3">
+          <Calendar size={14} />
           <span>Uploaded {formatDate(resume.created_at)}</span>
         </div>
 
-        <div className="card-actions justify-end mt-4">
+        {/* Skills Display */}
+        <SkillsDisplay resume={resume} editable={true} />
+
+        <div className="d-flex gap-2 mt-3">
           <a 
             href={resume.resume_url} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="btn btn-sm btn-ghost"
+            className="btn btn-sm btn-outline-primary flex-fill"
           >
-            <Download className="w-4 h-4" />
+            <Download size={14} className="me-1" />
             Download
           </a>
-          <button onClick={handleDelete} className="btn btn-sm btn-error btn-outline">
-            <Trash2 className="w-4 h-4" />
+          <button 
+            onClick={handleDelete} 
+            className="btn btn-sm btn-outline-danger"
+          >
+            <Trash2 size={14} className="me-1" />
             Delete
           </button>
         </div>

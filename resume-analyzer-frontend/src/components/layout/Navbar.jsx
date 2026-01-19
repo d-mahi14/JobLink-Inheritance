@@ -47,7 +47,7 @@ const Navbar = () => {
         {isAuthenticated ? (
           <div className="dropdown dropdown-end">
             <label tabIndex={0} className="btn btn-ghost btn-circle avatar">
-              <div className="w-10 rounded-full bg-primary text-white flex items-center justify-center">
+              <div className="w-10 rounded-full bg-primary text-white flex items-center justify-center overflow-hidden ml-auto">
                 {profile?.profile_pic ? (
                   <img src={profile.profile_pic} alt="Profile" />
                 ) : (
