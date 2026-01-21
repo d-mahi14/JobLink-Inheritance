@@ -21,7 +21,7 @@ const Navbar = () => {
         </Link>
       </div>
 
-      <div className="navbar-center hidden lg:flex">
+      <div className="navbar-center absolute left-1/2 -translate-x-1/2 hidden lg:flex">
         {isAuthenticated && (
           <ul className="menu menu-horizontal px-1">
             {isCandidate && (
@@ -30,6 +30,7 @@ const Navbar = () => {
                 <li><Link to="/candidate/resumes">My Resumes</Link></li>
                 <li><Link to="/candidate/jobs">Browse Jobs</Link></li>
                 <li><Link to="/candidate/applications">Applications</Link></li>
+                <li>      </li>
               </>
             )}
             {isCompany && (
@@ -43,7 +44,7 @@ const Navbar = () => {
         )}
       </div>
 
-      <div className="navbar-end">
+      <div className="navbar-end absolute right-4 top-2">
         {isAuthenticated ? (
           <div className="dropdown dropdown-end">
             <label tabIndex={0} className="btn btn-ghost btn-circle avatar">

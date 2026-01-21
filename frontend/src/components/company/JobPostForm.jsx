@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useJobStore } from '../../store/jobStore';
-import { Briefcase, MapPin, DollarSign, FileText } from 'lucide-react';
+import { Briefcase, MapPin, IndianRupee, FileText } from 'lucide-react';
 
 const JobPostForm = ({ initialData = null }) => {
   const [formData, setFormData] = useState({
@@ -105,10 +105,10 @@ const JobPostForm = ({ initialData = null }) => {
             <span className="label-text font-semibold">Salary Range</span>
           </label>
           <label className="input input-bordered flex items-center gap-2">
-            <DollarSign className="w-4 h-4 opacity-70" />
+            <IndianRupee className="w-4 h-4 opacity-70" />
             <input
               type="text"
-              placeholder="e.g. $80k - $120k"
+              placeholder="e.g. ₹80k - ₹120k"
               value={formData.salaryRange}
               onChange={(e) => setFormData({ ...formData, salaryRange: e.target.value })}
               className="grow"

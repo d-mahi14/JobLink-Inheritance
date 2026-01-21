@@ -1,4 +1,4 @@
-import { Briefcase, Github, Twitter, Linkedin } from 'lucide-react';
+import { Briefcase, Github } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -14,14 +14,8 @@ const Footer = () => {
       </aside>
       <nav>
         <div className="grid grid-flow-col gap-4">
-          <a className="link link-hover">
-            <Twitter className="w-6 h-6" />
-          </a>
-          <a className="link link-hover">
+          <a href="https://github.com/d-mahi14/JobLink-Inheritance.git"className="link link-hover">
             <Github className="w-6 h-6" />
-          </a>
-          <a className="link link-hover">
-            <Linkedin className="w-6 h-6" />
           </a>
         </div>
       </nav>

@@ -1,4 +1,4 @@
-import { MapPin, DollarSign, Building, Calendar, Send } from 'lucide-react';
+import { MapPin, IndianRupee , Building, Calendar, Send } from 'lucide-react';
 import { formatDate, truncateText } from '../../utils/formatters';
 import { useState } from 'react';
 import { useApplicationStore } from '../../store/applicationStore';
@@ -56,7 +56,7 @@ const JobCard = ({ job }) => {
             )}
             {job.salary_range && (
               <div className="badge badge-outline">
-                <DollarSign className="w-3 h-3 mr-1" />
+                <IndianRupee className="w-3 h-3 mr-1" />
                 {job.salary_range}
               </div>
             )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, Briefcase, DollarSign } from 'lucide-react';
+import { MapPin, Briefcase, IndianRupee } from 'lucide-react';
 import { useJobStore } from '../../store/jobStore';
 
 const EditJob = () => {
@@ -120,13 +120,13 @@ Strong problem-solving skills`}
           <div className="form-control">
             <label className="label">Salary Range</label>
             <div className="input input-bordered flex items-center gap-2">
-              <DollarSign className="w-4 h-4 opacity-60" />
+              <IndianRupee className="w-4 h-4 opacity-60" />
               <input
                 type="text"
                 name="salary_range"
                 value={formData.salary_range}
                 onChange={handleChange}
-                placeholder="e.g. $80k - $120k"
+                placeholder="e.g. ₹80k - ₹120k"
                 className="grow"
               />
             </div>

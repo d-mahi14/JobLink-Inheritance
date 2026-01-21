@@ -157,6 +157,7 @@ const ApplicationReviewCard = ({ application }) => {
             rel="noopener noreferrer"
             className="btn btn-sm btn-outline-secondary"
           >
+            {console.log("Resume URL:", application.resumes?.resume_url)}
             <Download size={16} className="me-1" />
             Download Resume
           </a>

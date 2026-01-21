@@ -132,16 +132,7 @@ const BrowseJobs = () => {
                 <p className="text-muted mb-0">
                   Showing <strong>{jobs.length}</strong> of <strong>{pagination.total}</strong> jobs
                 </p>
-                <div className="btn-group" role="group">
-                  <input type="radio" className="btn-check" name="view" id="grid" defaultChecked />
-                  <label className="btn btn-outline-secondary" htmlFor="grid">
-                    <i className="bi bi-grid-3x3-gap"></i>
-                  </label>
-                  <input type="radio" className="btn-check" name="view" id="list" />
-                  <label className="btn btn-outline-secondary" htmlFor="list">
-                    <i className="bi bi-list-ul"></i>
-                  </label>
-                </div>
+                
               </div>
             </div>
           </div>

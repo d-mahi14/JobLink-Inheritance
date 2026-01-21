@@ -63,7 +63,7 @@ export const getMyApplications = async (req, res) => {
           salary_range,
           profiles(full_name, profile_pic)
         ),
-        resumes(file_name, resume_url)
+        resumes(file_name, storage_path)
       `)
       .eq('candidate_id', candidateId)
       .order('applied_at', { ascending: false });
@@ -114,7 +114,7 @@ export const getJobApplications = async (req, res) => {
         resumes(
           id,
           file_name,
-          resume_url,
+          storage_path,
           analysis_data
         )
       `)
@@ -123,6 +123,19 @@ export const getJobApplications = async (req, res) => {
 
     if (error) {
       return res.status(400).json({ message: error.message });
+    }
+        // 🔐 Generate signed URLs for resumes
+    for (const app of applications) {
+      if (app.resumes?.storage_path) {
+        const { data, error: signError } = await supabase
+          .storage
+          .from('uploads') // bucket name
+          .createSignedUrl(app.resumes.storage_path, 60 * 10); // 10 minutes
+
+        if (!signError) {
+          app.resumes.resume_url = data.signedUrl;
+        }
+      }
     }
 
     res.status(200).json(applications);
