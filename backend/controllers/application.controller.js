@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.config.js';
+import { calculateMatchScore } from '../services/ai.service.js';
 
-// Apply for a job (candidate only)
+// Apply for a job (candidate only) - WITH AI MATCH SCORE
 export const applyForJob = async (req, res) => {
   try {
     const { jobId, resumeId } = req.body;
@@ -22,7 +23,51 @@ export const applyForJob = async (req, res) => {
       return res.status(400).json({ message: "You have already applied for this job" });
     }
 
-    // Create application
+    // 1️⃣ Get resume with analysis data
+    const { data: resume, error: resumeError } = await supabase
+      .from('resumes')
+      .select('analysis_data')
+      .eq('id', resumeId)
+      .eq('candidate_id', candidateId)
+      .single();
+
+    if (resumeError || !resume) {
+      return res.status(404).json({ message: "Resume not found" });
+    }
+
+    // 2️⃣ Get job posting details
+    const { data: job, error: jobError } = await supabase
+      .from('job_postings')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    if (jobError || !job) {
+      return res.status(404).json({ message: "Job posting not found" });
+    }
+
+    // 3️⃣ Calculate match score using AI
+    let matchScore = null;
+    let matchDetails = null;
+
+    try {
+      if (resume.analysis_data && resume.analysis_data.skills) {
+        console.log('Calculating AI match score...');
+        const matchResult = await calculateMatchScore(resume.analysis_data, job);
+        matchScore = matchResult.matchScore;
+        matchDetails = matchResult;
+        console.log('Match score calculated:', matchScore);
+      } else {
+        console.log('No resume analysis data available, skipping match score');
+        matchScore = null;
+      }
+    } catch (aiError) {
+      console.error('Match score calculation failed:', aiError);
+      // Continue without match score
+      matchScore = null;
+    }
+
+    // 4️⃣ Create application with match score
     const { data: application, error } = await supabase
       .from('applications')
       .insert([
@@ -30,7 +75,9 @@ export const applyForJob = async (req, res) => {
           candidate_id: candidateId,
           job_id: jobId,
           resume_id: resumeId,
-          status: 'pending'
+          status: 'pending',
+          match_score: matchScore,
+          match_details: matchDetails // Store full analysis
         }
       ])
       .select()
@@ -104,6 +151,7 @@ export const getJobApplications = async (req, res) => {
         candidate_id,
         status,
         match_score,
+        match_details,
         applied_at,
         profiles!applications_candidate_id_fkey(
           id,
@@ -124,7 +172,8 @@ export const getJobApplications = async (req, res) => {
     if (error) {
       return res.status(400).json({ message: error.message });
     }
-        // 🔐 Generate signed URLs for resumes
+    
+    // 🔐 Generate signed URLs for resumes
     for (const app of applications) {
       if (app.resumes?.storage_path) {
         const { data, error: signError } = await supabase
@@ -266,7 +315,7 @@ export const withdrawApplication = async (req, res) => {
 
     res.status(200).json({ 
       message: "Application withdrawn successfully",
-      deletedApplication: data[0] // optional, can remove if you don’t want to expose
+      deletedApplication: data[0]
     });
   } catch (error) {
     console.error("Error in withdrawApplication:", error);

@@ -116,6 +116,40 @@ const ApplicationReviewCard = ({ application }) => {
           </div>
         )}
 
+        {application.match_details && (
+  <div className="mt-3">
+    <h6 className="fw-bold mb-2">Match Analysis</h6>
+    
+    {application.match_details.matchedSkills?.length > 0 && (
+      <div className="mb-2">
+        <small className="text-success fw-semibold">Matched Skills:</small>
+        <div className="d-flex flex-wrap gap-1 mt-1">
+          {application.match_details.matchedSkills.map((skill, idx) => (
+            <span key={idx} className="badge bg-success">{skill}</span>
+          ))}
+        </div>
+      </div>
+    )}
+    
+    {application.match_details.missingSkills?.length > 0 && (
+      <div className="mb-2">
+        <small className="text-warning fw-semibold">Missing Skills:</small>
+        <div className="d-flex flex-wrap gap-1 mt-1">
+          {application.match_details.missingSkills.map((skill, idx) => (
+            <span key={idx} className="badge bg-warning">{skill}</span>
+          ))}
+        </div>
+      </div>
+    )}
+    
+    {application.match_details.recommendation && (
+      <div className="alert alert-info small mb-0 mt-2">
+        <strong>AI Recommendation:</strong> {application.match_details.recommendation}
+      </div>
+    )}
+  </div>
+)}
+
         <hr />
 
         {/* Actions */}

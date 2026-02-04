@@ -1,8 +1,9 @@
 import { supabase, getUserSupabase } from '../lib/supabase.config.js';
 import { uploadToSupabase, deleteFromSupabase } from '../lib/supabaseStorage.js';
+import { analyzeResume } from '../services/ai.service.js';
 
 /**
- * Upload resume
+ * Upload resume with AI analysis
  */
 export const uploadResume = async (req, res) => {
   try {
@@ -24,8 +25,24 @@ export const uploadResume = async (req, res) => {
     );
     console.log('Upload result:', uploadResult);
 
-    // 2️⃣ Insert DB row using ADMIN client to bypass RLS temporarily
-    // (You should set up proper RLS policies instead)
+    // 2️⃣ Analyze resume with AI
+    console.log('Starting AI analysis...');
+    let analysisData = null;
+    
+    try {
+      analysisData = await analyzeResume(resumeFile, fileName);
+      console.log('AI analysis completed:', analysisData);
+    } catch (aiError) {
+      console.error('AI analysis failed:', aiError);
+      // Continue without analysis - will be null
+      analysisData = {
+        skills: [],
+        score: 0,
+        error: 'AI analysis failed - please retry later'
+      };
+    }
+
+    // 3️⃣ Insert DB row with analysis
     const { data, error } = await supabase
       .from('resumes')
       .insert({
@@ -33,7 +50,8 @@ export const uploadResume = async (req, res) => {
         resume_url: uploadResult.publicUrl,
         storage_path: uploadResult.path,
         file_name: fileName || uploadResult.fileName,
-        file_size: uploadResult.fileSize
+        file_size: uploadResult.fileSize,
+        analysis_data: analysisData
       })
       .select()
       .single();
@@ -45,7 +63,7 @@ export const uploadResume = async (req, res) => {
       return res.status(400).json({ message: error.message, details: error });
     }
 
-    console.log('Resume saved to database:', data);
+    console.log('Resume saved to database with AI analysis:', data);
     res.status(201).json(data);
   } catch (error) {
     console.error('uploadResume error:', error);
@@ -118,7 +136,7 @@ export const getResume = async (req, res) => {
 };
 
 /**
- * Update resume analysis
+ * Update resume analysis (manual edit)
  */
 export const updateResumeAnalysis = async (req, res) => {
   try {
@@ -144,7 +162,6 @@ export const updateResumeAnalysis = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
 
 /**
  * Delete resume
