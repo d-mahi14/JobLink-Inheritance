@@ -2,7 +2,7 @@
   "name": "resume-analyzer-backend",
   "version": "1.0.0",
   "type": "module",
-  "description": "Resume analyzer backend with Supabase - supporting candidates and companies",
+  "description": "Resume analyzer backend with Supabase and AI - supporting candidates and companies",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -14,7 +14,9 @@
     "analyzer",
     "supabase",
     "express",
-    "api"
+    "api",
+    "openai",
+    "ai"
   ],
   "author": "Mokshi Shah",
   "license": "ISC",
@@ -24,7 +26,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
+    "mammoth": "^1.8.0",
     "multer": "^1.4.5-lts.1",
+    "openai": "^4.77.0",
+    "pdf-parse": "^1.1.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
