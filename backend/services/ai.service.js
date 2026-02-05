@@ -1,11 +1,24 @@
-import OpenAI from 'openai';
+import Groq from "groq-sdk";
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize Groq client (100% FREE - no billing required!)
+// Get key from: https://console.groq.com/keys
+let groq;
+try {
+  if (!process.env.GROQ_API_KEY) {
+    console.error('❌ GROQ_API_KEY is not set in .env file!');
+    console.error('📝 Get FREE key from: https://console.groq.com/keys');
+    console.error('🆓 Groq is 100% FREE - no billing required!');
+  } else {
+    groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+    console.log('✅ Groq client initialized successfully (FREE API)');
+  }
+} catch (error) {
+  console.error('❌ Failed to initialize Groq client:', error.message);
+}
 
 /**
  * Convert base64 to buffer for parsing
@@ -60,12 +73,13 @@ const extractResumeText = async (base64File, fileName) => {
 };
 
 /**
- * Analyze resume using OpenAI GPT
+ * Analyze resume using Groq AI (FREE!)
  * Extracts: skills, experience, education, contact info, summary
  */
 export const analyzeResume = async (base64File, fileName) => {
   try {
-    console.log('Starting resume analysis for:', fileName);
+    console.log('═══════════════════════════════════════════════');
+    console.log('🔍 Starting resume analysis for:', fileName);
 
     // Step 1: Extract text from resume
     const resumeText = await extractResumeText(base64File, fileName);
@@ -74,16 +88,31 @@ export const analyzeResume = async (base64File, fileName) => {
       throw new Error('Resume text is too short or empty');
     }
 
-    console.log('Resume text extracted, length:', resumeText.length);
+    console.log('📄 Resume text extracted, length:', resumeText.length);
 
-    // Step 2: Analyze with GPT
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Cost-effective and fast
+    // Check if Groq is available
+    if (!groq || !process.env.GROQ_API_KEY) {
+      console.warn('⚠️  Groq not configured - using fallback skill extraction');
+      const fallbackSkills = extractSkillsFallback(resumeText);
+      return {
+        skills: fallbackSkills,
+        experience: [],
+        education: [],
+        contact: {},
+        summary: "AI analysis unavailable - using keyword matching",
+        score: 65
+      };
+    }
+
+    // Step 2: Analyze with Groq (using Llama 3.1 - fast and free!)
+    console.log('🤖 Calling Groq API (FREE)...');
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.1-70b-versatile", // Fast, accurate, FREE!
       messages: [
         {
           role: "system",
           content: `You are an expert resume analyzer. Extract structured information from resumes and return ONLY valid JSON.
-          
+
 Your response MUST be a valid JSON object with this exact structure:
 {
   "skills": ["skill1", "skill2", ...],
@@ -112,52 +141,54 @@ Your response MUST be a valid JSON object with this exact structure:
   "score": 85
 }
 
-Rules:
-- Extract ALL technical and soft skills (minimum 5, maximum 20)
-- Include programming languages, frameworks, tools, methodologies
+CRITICAL RULES:
+- Extract ONLY skills that are EXPLICITLY mentioned in the resume
+- DO NOT add skills that are implied or assumed
+- Include technical skills: programming languages, frameworks, tools
+- Include soft skills: communication, leadership, teamwork
+- Minimum 3 skills, maximum 15 skills
 - Score should be 1-100 based on resume quality
-- Return ONLY the JSON object, no other text
-- If information is missing, use empty string "" or empty array []`
+- Return ONLY the JSON object, no markdown, no explanation`
         },
         {
           role: "user",
           content: `Analyze this resume and extract information:\n\n${resumeText.substring(0, 4000)}`
         }
       ],
-      temperature: 0.3,
+      temperature: 0.2,
       max_tokens: 2000,
     });
 
     const responseText = completion.choices[0].message.content.trim();
-    console.log('GPT Response received:', responseText.substring(0, 200));
+    console.log('✅ Groq Response received');
 
     // Step 3: Parse the JSON response
     let analysisData;
     try {
-      // Remove markdown code blocks if present
       const jsonText = responseText
         .replace(/```json\n?/g, '')
         .replace(/```\n?/g, '')
         .trim();
       
       analysisData = JSON.parse(jsonText);
+      console.log('✅ JSON parsed successfully');
     } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
-      console.error('Response text:', responseText);
+      console.error('❌ JSON parsing error:', parseError.message);
+      console.warn('⚠️  Falling back to keyword matching');
       
-      // Fallback: extract basic skills using regex
       analysisData = {
         skills: extractSkillsFallback(resumeText),
         experience: [],
         education: [],
         contact: {},
-        summary: "Could not extract full analysis",
+        summary: "Could not extract full analysis - using fallback",
         score: 70
       };
     }
 
     // Validate and ensure minimum data
     if (!analysisData.skills || analysisData.skills.length === 0) {
+      console.warn('⚠️  No skills extracted by AI, using fallback');
       analysisData.skills = extractSkillsFallback(resumeText);
     }
 
@@ -165,46 +196,61 @@ Rules:
       analysisData.score = 75;
     }
 
-    console.log('Resume analysis completed:', {
+    console.log('✅ Resume analysis completed successfully!');
+    console.log('📊 Results:', {
       skillsCount: analysisData.skills.length,
+      skills: analysisData.skills.slice(0, 5),
       score: analysisData.score
     });
+    console.log('═══════════════════════════════════════════════');
 
     return analysisData;
 
   } catch (error) {
-    console.error('Resume analysis error:', error);
+    console.error('❌ Resume analysis error:', error.message);
     throw error;
   }
 };
 
 /**
- * Fallback skill extraction using keyword matching
+ * Improved fallback skill extraction
  */
 const extractSkillsFallback = (text) => {
-  const commonSkills = [
-    'JavaScript', 'Python', 'Java', 'C++', 'React', 'Node.js', 'Angular',
-    'Vue', 'TypeScript', 'HTML', 'CSS', 'SQL', 'MongoDB', 'PostgreSQL',
-    'Git', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'REST API',
-    'GraphQL', 'Agile', 'Scrum', 'Problem Solving', 'Team Collaboration',
-    'Communication', 'Leadership', 'Project Management'
-  ];
+  const textLower = text.toLowerCase();
+  
+  const skillCategories = {
+    programming: ['JavaScript', 'Python', 'Java', 'C++', 'C#', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'Go', 'TypeScript'],
+    frontend: ['React', 'Angular', 'Vue', 'HTML', 'CSS', 'Bootstrap', 'Tailwind', 'Next.js'],
+    backend: ['Node.js', 'Express', 'Django', 'Flask', 'Spring Boot', 'ASP.NET', 'Laravel'],
+    databases: ['SQL', 'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Firebase'],
+    cloud: ['AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Jenkins', 'CI/CD'],
+    tools: ['Git', 'GitHub', 'JIRA', 'Postman', 'VS Code', 'Linux'],
+    concepts: ['REST API', 'GraphQL', 'Microservices', 'Agile', 'Scrum', 'DevOps'],
+    soft: ['Problem Solving', 'Team Collaboration', 'Communication', 'Leadership']
+  };
 
-  const foundSkills = commonSkills.filter(skill => 
-    text.toLowerCase().includes(skill.toLowerCase())
-  );
+  const allSkills = Object.values(skillCategories).flat();
+  
+  const foundSkills = allSkills.filter(skill => {
+    const regex = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    return regex.test(text);
+  });
 
-  return foundSkills.length > 0 ? foundSkills : ['General Skills'];
+  return foundSkills.length > 0 ? foundSkills.slice(0, 12) : ['General Skills'];
 };
 
 /**
- * Calculate match score between resume and job description
+ * Calculate match score using Groq AI (FREE!)
  */
 export const calculateMatchScore = async (resumeAnalysisData, jobPosting) => {
   try {
-    console.log('Calculating match score for job:', jobPosting.title);
+    console.log('═══════════════════════════════════════════════');
+    console.log('🎯 Calculating match score for job:', jobPosting.title);
 
-    // Prepare resume summary
+    if (!resumeAnalysisData || !resumeAnalysisData.skills) {
+      throw new Error('Resume analysis data is missing');
+    }
+
     const resumeSummary = {
       skills: resumeAnalysisData.skills || [],
       experience: resumeAnalysisData.experience || [],
@@ -212,63 +258,55 @@ export const calculateMatchScore = async (resumeAnalysisData, jobPosting) => {
       summary: resumeAnalysisData.summary || ''
     };
 
-    // Prepare job requirements
     const jobRequirements = {
       title: jobPosting.title,
       description: jobPosting.description,
-      requirements: jobPosting.requirements || [],
-      location: jobPosting.location || '',
-      salary_range: jobPosting.salary_range || ''
+      requirements: jobPosting.requirements || []
     };
 
-    // Call GPT to calculate match
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    // Check if Groq is available
+    if (!groq || !process.env.GROQ_API_KEY) {
+      console.warn('⚠️  Groq not configured - using fallback');
+      return calculateMatchScoreFallback(resumeSummary, jobRequirements);
+    }
+
+    console.log('🤖 Calling Groq API for match score (FREE)...');
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.1-70b-versatile",
       messages: [
         {
           role: "system",
-          content: `You are an expert job matching AI. Compare candidate resume with job requirements and return ONLY valid JSON.
+          content: `You are an expert job matching AI. Return ONLY valid JSON.
 
-Your response MUST be a valid JSON object with this structure:
+Structure:
 {
   "matchScore": 85,
   "matchedSkills": ["skill1", "skill2"],
-  "missingSkills": ["skill3", "skill4"],
-  "strengths": ["strength1", "strength2"],
-  "weaknesses": ["weakness1", "weakness2"],
-  "recommendation": "Brief recommendation"
+  "missingSkills": ["skill3"],
+  "strengths": ["strength1"],
+  "weaknesses": ["weakness1"],
+  "recommendation": "Brief text"
 }
 
-Scoring criteria (0-100):
-- 0-40: Poor match - candidate lacks most required skills
-- 41-60: Fair match - candidate has some relevant skills but missing key ones
-- 61-75: Good match - candidate meets most requirements
-- 76-90: Excellent match - candidate exceeds most requirements
-- 91-100: Perfect match - candidate exceeds all requirements
-
-Return ONLY the JSON object, no other text.`
+Scoring (0-100):
+0-40: Poor match
+41-60: Fair match
+61-75: Good match
+76-90: Excellent match
+91-100: Perfect match`
         },
         {
           role: "user",
-          content: `Calculate match score between:
-
-CANDIDATE RESUME:
-${JSON.stringify(resumeSummary, null, 2)}
-
-JOB REQUIREMENTS:
-${JSON.stringify(jobRequirements, null, 2)}
-
-Provide detailed analysis with match score.`
+          content: `Match score for:\n\nRESUME:\n${JSON.stringify(resumeSummary, null, 2)}\n\nJOB:\n${JSON.stringify(jobRequirements, null, 2)}`
         }
       ],
       temperature: 0.3,
-      max_tokens: 1500,
+      max_tokens: 1000,
     });
 
     const responseText = completion.choices[0].message.content.trim();
-    console.log('Match score response:', responseText.substring(0, 200));
+    console.log('✅ Match score response received');
 
-    // Parse JSON response
     let matchData;
     try {
       const jsonText = responseText
@@ -278,23 +316,23 @@ Provide detailed analysis with match score.`
       
       matchData = JSON.parse(jsonText);
     } catch (parseError) {
-      console.error('Match score JSON parsing error:', parseError);
-      
-      // Fallback calculation
+      console.warn('⚠️  Parse error, using fallback');
       matchData = calculateMatchScoreFallback(resumeSummary, jobRequirements);
     }
 
-    // Ensure score is within range
-    if (matchData.matchScore < 0) matchData.matchScore = 0;
-    if (matchData.matchScore > 100) matchData.matchScore = 100;
+    matchData.matchScore = Math.max(0, Math.min(100, matchData.matchScore));
 
-    console.log('Match score calculated:', matchData.matchScore);
+    console.log('✅ Match score:', matchData.matchScore);
+    console.log('═══════════════════════════════════════════════');
 
     return matchData;
 
   } catch (error) {
-    console.error('Match score calculation error:', error);
-    throw error;
+    console.error('❌ Match score error:', error.message);
+    return calculateMatchScoreFallback(
+      { skills: resumeAnalysisData?.skills || [] },
+      { requirements: jobPosting.requirements || [] }
+    );
   }
 };
 
@@ -303,26 +341,18 @@ Provide detailed analysis with match score.`
  */
 const calculateMatchScoreFallback = (resume, job) => {
   const resumeSkills = resume.skills.map(s => s.toLowerCase());
-  const jobReqs = job.requirements.join(' ').toLowerCase();
+  const jobText = (job.requirements || []).join(' ').toLowerCase() + ' ' + (job.description || '').toLowerCase();
   
-  let matchedCount = 0;
-  resumeSkills.forEach(skill => {
-    if (jobReqs.includes(skill)) {
-      matchedCount++;
-    }
-  });
-
-  const matchScore = resumeSkills.length > 0 
-    ? Math.round((matchedCount / resumeSkills.length) * 100)
-    : 50;
+  const matchedSkills = resumeSkills.filter(skill => jobText.includes(skill.toLowerCase()));
+  const matchScore = Math.max(30, Math.round((matchedSkills.length / (resumeSkills.length || 1)) * 100));
 
   return {
     matchScore,
-    matchedSkills: resumeSkills.filter(s => jobReqs.includes(s)),
+    matchedSkills,
     missingSkills: [],
-    strengths: ['Basic skills match'],
-    weaknesses: ['Detailed analysis unavailable'],
-    recommendation: 'Review application manually'
+    strengths: matchedSkills.length > 0 ? [`Has ${matchedSkills.length} relevant skills`] : ['Basic qualifications'],
+    weaknesses: matchedSkills.length < resumeSkills.length / 2 ? ['Missing key skills'] : ['Some gaps'],
+    recommendation: matchScore >= 70 ? 'Review application' : matchScore >= 50 ? 'Possible fit' : 'May not meet requirements'
   };
 };
 
