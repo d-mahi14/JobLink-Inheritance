@@ -1,7 +1,7 @@
 import { supabase, getUserSupabase } from '../lib/supabase.config.js';
 import { uploadToSupabase, deleteFromSupabase } from '../lib/supabaseStorage.js';
 import { analyzeResume } from '../services/ai.service.js';
-
+console.log('🔍 AI Service loaded:', typeof analyzeResume);
 /**
  * Upload resume with AI analysis
  */

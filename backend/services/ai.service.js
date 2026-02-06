@@ -2,8 +2,7 @@ import Groq from "groq-sdk";
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 
-// Initialize Groq client (100% FREE - no billing required!)
-// Get key from: https://console.groq.com/keys
+// Initialize Groq client
 let groq;
 try {
   if (!process.env.GROQ_API_KEY) {
@@ -74,7 +73,6 @@ const extractResumeText = async (base64File, fileName) => {
 
 /**
  * Analyze resume using Groq AI (FREE!)
- * Extracts: skills, experience, education, contact info, summary
  */
 export const analyzeResume = async (base64File, fileName) => {
   try {
@@ -82,13 +80,15 @@ export const analyzeResume = async (base64File, fileName) => {
     console.log('🔍 Starting resume analysis for:', fileName);
 
     // Step 1: Extract text from resume
+    console.log('📄 Extracting text from file...');
     const resumeText = await extractResumeText(base64File, fileName);
     
     if (!resumeText || resumeText.trim().length < 100) {
       throw new Error('Resume text is too short or empty');
     }
 
-    console.log('📄 Resume text extracted, length:', resumeText.length);
+    console.log('✅ Resume text extracted, length:', resumeText.length);
+    console.log('First 200 chars:', resumeText.substring(0, 200));
 
     // Check if Groq is available
     if (!groq || !process.env.GROQ_API_KEY) {
@@ -104,10 +104,10 @@ export const analyzeResume = async (base64File, fileName) => {
       };
     }
 
-    // Step 2: Analyze with Groq (using Llama 3.1 - fast and free!)
+    // Step 2: Analyze with Groq (UPDATED MODEL!)
     console.log('🤖 Calling Groq API (FREE)...');
     const completion = await groq.chat.completions.create({
-      model: "llama-3.1-70b-versatile", // Fast, accurate, FREE!
+      model: "llama-3.3-70b-versatile",  // ✅ FIXED: Updated model name
       messages: [
         {
           role: "system",
@@ -160,7 +160,8 @@ CRITICAL RULES:
     });
 
     const responseText = completion.choices[0].message.content.trim();
-    console.log('✅ Groq Response received');
+    console.log('✅ Groq Response received, length:', responseText.length);
+    console.log('Raw response:', responseText.substring(0, 200));
 
     // Step 3: Parse the JSON response
     let analysisData;
@@ -172,8 +173,10 @@ CRITICAL RULES:
       
       analysisData = JSON.parse(jsonText);
       console.log('✅ JSON parsed successfully');
+      console.log('Extracted skills:', analysisData.skills);
     } catch (parseError) {
       console.error('❌ JSON parsing error:', parseError.message);
+      console.error('Response was:', responseText.substring(0, 500));
       console.warn('⚠️  Falling back to keyword matching');
       
       analysisData = {
@@ -208,7 +211,10 @@ CRITICAL RULES:
 
   } catch (error) {
     console.error('❌ Resume analysis error:', error.message);
-    throw error;
+    console.error('Stack:', error.stack);
+    
+    // Return error details for debugging
+    throw new Error(`AI Analysis failed: ${error.message}`);
   }
 };
 
@@ -219,14 +225,14 @@ const extractSkillsFallback = (text) => {
   const textLower = text.toLowerCase();
   
   const skillCategories = {
-    programming: ['JavaScript', 'Python', 'Java', 'C++', 'C#', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'Go', 'TypeScript'],
-    frontend: ['React', 'Angular', 'Vue', 'HTML', 'CSS', 'Bootstrap', 'Tailwind', 'Next.js'],
-    backend: ['Node.js', 'Express', 'Django', 'Flask', 'Spring Boot', 'ASP.NET', 'Laravel'],
-    databases: ['SQL', 'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Firebase'],
-    cloud: ['AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Jenkins', 'CI/CD'],
-    tools: ['Git', 'GitHub', 'JIRA', 'Postman', 'VS Code', 'Linux'],
-    concepts: ['REST API', 'GraphQL', 'Microservices', 'Agile', 'Scrum', 'DevOps'],
-    soft: ['Problem Solving', 'Team Collaboration', 'Communication', 'Leadership']
+    programming: ['JavaScript', 'Python', 'Java', 'C++', 'C#', 'Ruby', 'PHP', 'Swift', 'Kotlin', 'Go', 'TypeScript', 'Rust', 'Scala'],
+    frontend: ['React', 'Angular', 'Vue', 'HTML', 'CSS', 'Bootstrap', 'Tailwind', 'Next.js', 'Svelte', 'Redux'],
+    backend: ['Node.js', 'Express', 'Django', 'Flask', 'Spring Boot', 'ASP.NET', 'Laravel', 'FastAPI'],
+    databases: ['SQL', 'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Firebase', 'Oracle', 'SQLite'],
+    cloud: ['AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Jenkins', 'CI/CD', 'Terraform'],
+    tools: ['Git', 'GitHub', 'GitLab', 'JIRA', 'Postman', 'VS Code', 'Linux', 'Vim'],
+    concepts: ['REST API', 'GraphQL', 'Microservices', 'Agile', 'Scrum', 'DevOps', 'TDD', 'OOP'],
+    soft: ['Problem Solving', 'Team Collaboration', 'Communication', 'Leadership', 'Time Management']
   };
 
   const allSkills = Object.values(skillCategories).flat();
@@ -236,11 +242,12 @@ const extractSkillsFallback = (text) => {
     return regex.test(text);
   });
 
+  console.log('Fallback extraction found:', foundSkills.length, 'skills');
   return foundSkills.length > 0 ? foundSkills.slice(0, 12) : ['General Skills'];
 };
 
 /**
- * Calculate match score using Groq AI (FREE!)
+ * Calculate match score using Groq AI
  */
 export const calculateMatchScore = async (resumeAnalysisData, jobPosting) => {
   try {
@@ -272,7 +279,7 @@ export const calculateMatchScore = async (resumeAnalysisData, jobPosting) => {
 
     console.log('🤖 Calling Groq API for match score (FREE)...');
     const completion = await groq.chat.completions.create({
-      model: "llama-3.1-70b-versatile",
+      model: "llama-3.3-70b-versatile",  // ✅ FIXED: Updated model name
       messages: [
         {
           role: "system",

@@ -10,52 +10,57 @@ export const useResumeStore = create((set, get) => ({
   isAnalyzing: false,
 
   uploadResume: async (resumeFile, fileName) => {
-    set({ isLoading: true });
-    try {
-      // Upload resume first
-      const resume = await resumesAPI.uploadResume(resumeFile, fileName);
+  set({ isLoading: true, isAnalyzing: true });
+  try {
+    // Upload resume (backend does AI analysis)
+    const resume = await resumesAPI.uploadResume(resumeFile, fileName);
+    
+    console.log('📋 Resume uploaded:', {
+      hasAnalysis: !!resume.analysis_data,
+      hasSkills: resume.analysis_data?.skills?.length > 0,
+      skillsCount: resume.analysis_data?.skills?.length,
+      score: resume.analysis_data?.score
+    });
+    
+    // Check if backend AI succeeded
+    const backendAIWorked = resume.analysis_data?.skills?.length > 0 && 
+                           !resume.analysis_data?.error;
+    
+    if (backendAIWorked) {
+      // ✅ Backend AI worked - use its data
+      console.log('✅ Using backend AI analysis');
+      toast.success(`Resume analyzed! Found ${resume.analysis_data.skills.length} skills`);
+      set({ resumes: [resume, ...get().resumes] });
+      return resume;
+    } else {
+      // ⚠️ Backend AI failed - use frontend fallback
+      console.warn('⚠️ Backend AI failed, using frontend fallback');
+      console.log('Error:', resume.analysis_data?.error);
       
-      // Show analyzing toast
-      const analyzingToast = toast.loading('Analyzing resume and extracting skills...');
-      set({ isAnalyzing: true });
+      const skills = await extractSkillsFromResume(fileName);
+      const analysisData = {
+        skills: skills,
+        extractedAt: new Date().toISOString(),
+        score: Math.floor(Math.random() * 30) + 70,
+      };
       
-      try {
-        // Extract skills using AI (mock for now)
-        const skills = await extractSkillsFromResume(fileName);
-        
-        // Update resume with extracted skills
-        const analysisData = {
-          skills: skills,
-          extractedAt: new Date().toISOString(),
-          score: Math.floor(Math.random() * 30) + 70, // Mock score 70-100
-        };
-        
-        const updatedResume = await resumesAPI.updateResumeAnalysis(
-          resume.id,
-          analysisData
-        );
-        
-        toast.success('Resume uploaded and analyzed successfully!', {
-          id: analyzingToast,
-        });
-        
-        set({ resumes: [updatedResume, ...get().resumes] });
-        return updatedResume;
-      } catch (analysisError) {
-        console.error('Skills extraction failed:', analysisError);
-        toast.error('Resume uploaded but skills analysis failed', {
-          id: analyzingToast,
-        });
-        set({ resumes: [resume, ...get().resumes] });
-        return resume;
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Upload failed');
-      throw error;
-    } finally {
-      set({ isLoading: false, isAnalyzing: false });
+      const updatedResume = await resumesAPI.updateResumeAnalysis(
+        resume.id,
+        analysisData
+      );
+      
+      toast.warning('Resume uploaded (AI unavailable - used keyword matching)');
+      set({ resumes: [updatedResume, ...get().resumes] });
+      return updatedResume;
     }
-  },
+  } catch (error) {
+    console.error('Upload error:', error);
+    toast.error(error.response?.data?.message || 'Upload failed');
+    throw error;
+  } finally {
+    set({ isLoading: false, isAnalyzing: false });
+  }
+},
 
   fetchMyResumes: async () => {
     set({ isLoading: true });
