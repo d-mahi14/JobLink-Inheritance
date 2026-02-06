@@ -21,7 +21,7 @@ const Navbar = () => {
         </Link>
       </div>
 
-      <div className="navbar-center absolute left-1/2 -translate-x-1/2 hidden lg:flex">
+      <div className="navbar-center absolute left-1/2 -translate-x-1/2 hidden lg:flex z-50">
         {isAuthenticated && (
           <ul className="menu menu-horizontal px-1">
             {isCandidate && (
@@ -44,7 +44,8 @@ const Navbar = () => {
         )}
       </div>
 
-      <div className="navbar-end absolute right-4 top-2">
+      <div className="navbar-end absolute right-4 top-2 z-40 pointer-events-none">
+        <div className="pointer-events-auto">
         {isAuthenticated ? (
           <div className="dropdown dropdown-end">
             <label tabIndex={0} className="btn btn-ghost btn-circle avatar">
@@ -80,6 +81,7 @@ const Navbar = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };
