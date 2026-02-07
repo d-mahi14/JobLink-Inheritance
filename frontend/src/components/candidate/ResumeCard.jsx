@@ -2,12 +2,13 @@ import { FileText, Download, Trash2, Calendar, Award } from 'lucide-react';
 import { formatDate, formatFileSize } from '../../utils/formatters';
 import { useResumeStore } from '../../store/resumeStore';
 import SkillsDisplay from './SkillsDisplay';
+import ContactInfo from './ContactInfo';
 
 const ResumeCard = ({ resume }) => {
   const { deleteResume } = useResumeStore();
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this resume? This will also remove all extracted skills.')) {
+    if (window.confirm('Are you sure you want to delete this resume? This will also remove all extracted information.')) {
       await deleteResume(resume.id);
     }
   };
@@ -41,6 +42,9 @@ const ResumeCard = ({ resume }) => {
           <Calendar size={14} />
           <span>Uploaded {formatDate(resume.created_at)}</span>
         </div>
+
+        {/* Contact Information - NEW */}
+        <ContactInfo resume={resume} />
 
         {/* Skills Display */}
         <SkillsDisplay resume={resume} editable={true} />

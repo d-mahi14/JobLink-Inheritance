@@ -1,7 +1,9 @@
-import { supabase, getUserSupabase } from '../lib/supabase.config.js';
+import { supabase } from '../lib/supabase.config.js';
 import { uploadToSupabase, deleteFromSupabase } from '../lib/supabaseStorage.js';
 import { analyzeResume } from '../services/ai.service.js';
+
 console.log('🔍 AI Service loaded:', typeof analyzeResume);
+
 /**
  * Upload resume with AI analysis
  */
@@ -10,39 +12,59 @@ export const uploadResume = async (req, res) => {
     const candidateId = req.user.id;
     const { resumeFile, fileName } = req.body;
 
-    console.log('Upload resume request:', { candidateId, hasFile: !!resumeFile, fileName });
+    console.log('Upload resume request:', {
+      candidateId,
+      hasFile: !!resumeFile,
+      fileName
+    });
 
     if (!resumeFile) {
       return res.status(400).json({ message: 'Resume file is required' });
     }
 
-    // 1️⃣ Upload to Supabase Storage
-    console.log('Uploading to storage...');
+    /* ------------------------------------
+       1️⃣ Upload to Supabase Storage
+    ------------------------------------ */
     const uploadResult = await uploadToSupabase(
       resumeFile,
       'resumes',
       `resume_${candidateId}_${Date.now()}`
     );
-    console.log('Upload result:', uploadResult);
 
-    // 2️⃣ Analyze resume with AI
-    console.log('Starting AI analysis...');
-    let analysisData = null;
-    
+    /* ------------------------------------
+       2️⃣ AI Resume Analysis
+    ------------------------------------ */
+    let analysisData;
+
     try {
       analysisData = await analyzeResume(resumeFile, fileName);
-      console.log('AI analysis completed:', analysisData);
     } catch (aiError) {
-      console.error('AI analysis failed:', aiError);
-      // Continue without analysis - will be null
+      console.error('❌ AI analysis failed:', aiError);
+
+      // ✅ SAFE FALLBACK (IMPORTANT)
       analysisData = {
         skills: [],
         score: 0,
-        error: 'AI analysis failed - please retry later'
+        contact: {
+          name: '',
+          email: '',
+          phone: '',
+          linkedin: '',
+          github: ''
+        },
+        error: 'AI analysis failed'
       };
     }
 
-    // 3️⃣ Insert DB row with analysis
+    console.log('📋 Final analysis data:', {
+      skills: analysisData.skills?.length || 0,
+      contact: analysisData.contact,
+      score: analysisData.score
+    });
+
+    /* ------------------------------------
+       3️⃣ Save Resume + Analysis to DB
+    ------------------------------------ */
     const { data, error } = await supabase
       .from('resumes')
       .insert({
@@ -57,16 +79,15 @@ export const uploadResume = async (req, res) => {
       .single();
 
     if (error) {
-      console.error('Database insert error:', error);
-      // Rollback file upload if DB insert fails
-      await deleteFromSupabase(uploadResult.path);
-      return res.status(400).json({ message: error.message, details: error });
+      console.error('❌ DB insert error:', error);
+      await deleteFromSupabase(uploadResult.path); // rollback
+      return res.status(400).json({ message: error.message });
     }
 
-    console.log('Resume saved to database with AI analysis:', data);
     res.status(201).json(data);
+
   } catch (error) {
-    console.error('uploadResume error:', error);
+    console.error('❌ uploadResume error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -78,8 +99,6 @@ export const getMyResumes = async (req, res) => {
   try {
     const candidateId = req.user.id;
 
-    console.log('Fetching resumes for candidate:', candidateId);
-
     const { data, error } = await supabase
       .from('resumes')
       .select('*')
@@ -87,14 +106,11 @@ export const getMyResumes = async (req, res) => {
       .order('updated_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching resumes:', error);
       return res.status(400).json({ message: error.message });
     }
 
-    console.log('Found resumes:', data?.length || 0);
     res.status(200).json(data || []);
   } catch (error) {
-    console.error('getMyResumes error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -117,7 +133,6 @@ export const getResume = async (req, res) => {
       return res.status(404).json({ message: 'Resume not found' });
     }
 
-    // Check if user owns this resume or is a company viewing an application
     const { data: profile } = await supabase
       .from('profiles')
       .select('user_type')
@@ -130,13 +145,12 @@ export const getResume = async (req, res) => {
 
     res.status(200).json(data);
   } catch (error) {
-    console.error('getResume error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
 /**
- * Update resume analysis (manual edit)
+ * Update resume analysis
  */
 export const updateResumeAnalysis = async (req, res) => {
   try {
@@ -158,7 +172,6 @@ export const updateResumeAnalysis = async (req, res) => {
 
     res.status(200).json(data);
   } catch (error) {
-    console.error('updateResumeAnalysis error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -171,7 +184,6 @@ export const deleteResume = async (req, res) => {
     const { resumeId } = req.params;
     const candidateId = req.user.id;
 
-    // 1️⃣ Fetch resume
     const { data: resume, error } = await supabase
       .from('resumes')
       .select('storage_path')
@@ -183,25 +195,18 @@ export const deleteResume = async (req, res) => {
       return res.status(404).json({ message: 'Resume not found' });
     }
 
-    // 2️⃣ Delete DB row
-    const { error: deleteError } = await supabase
+    await supabase
       .from('resumes')
       .delete()
       .eq('id', resumeId)
       .eq('candidate_id', candidateId);
 
-    if (deleteError) {
-      return res.status(400).json({ message: deleteError.message });
-    }
-
-    // 3️⃣ Delete storage file
     if (resume.storage_path) {
       await deleteFromSupabase(resume.storage_path);
     }
 
     res.status(200).json({ message: 'Resume deleted successfully' });
   } catch (error) {
-    console.error('deleteResume error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

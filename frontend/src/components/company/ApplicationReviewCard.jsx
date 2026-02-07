@@ -1,4 +1,4 @@
-import { User, FileText, Calendar, Download, Award } from 'lucide-react';
+import { User, FileText, Calendar, Download, Award, Mail, Phone, Github, Linkedin, MapPin } from 'lucide-react';
 import { formatDate } from '../../utils/formatters';
 import { useApplicationStore } from '../../store/applicationStore';
 import { useState } from 'react';
@@ -11,6 +11,7 @@ const ApplicationReviewCard = ({ application }) => {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const { updateApplicationStatus } = useApplicationStore();
+  const contact = application.resumes?.analysis_data?.contact || {};
 
   const handleUpdateStatus = async () => {
     setIsUpdating(true);
@@ -83,6 +84,66 @@ const ApplicationReviewCard = ({ application }) => {
           </div>
         </div>
 
+        {/* Contact Information - NEW */}
+        {(contact.email || contact.phone || contact.github || contact.linkedin || contact.location) && (
+          <div className="border rounded p-3 bg-light mb-3">
+            <h6 className="fw-bold mb-2">
+              <Mail size={16} className="me-2" />
+              Contact Information
+            </h6>
+            <div className="d-flex flex-column gap-2 small">
+              {contact.email && (
+                <div className="d-flex align-items-center">
+                  <Mail size={14} className="me-2 text-muted" />
+                  <a href={`mailto:${contact.email}`} className="text-decoration-none">
+                    {contact.email}
+                  </a>
+                </div>
+              )}
+              {contact.phone && (
+                <div className="d-flex align-items-center">
+                  <Phone size={14} className="me-2 text-muted" />
+                  <a href={`tel:${contact.phone}`} className="text-decoration-none">
+                    {contact.phone}
+                  </a>
+                </div>
+              )}
+              {contact.github && (
+                <div className="d-flex align-items-center">
+                  <Github size={14} className="me-2 text-muted" />
+                  <a 
+                    href={contact.github.startsWith('http') ? contact.github : `https://${contact.github}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-decoration-none"
+                  >
+                    {contact.github}
+                  </a>
+                </div>
+              )}
+              {contact.linkedin && (
+                <div className="d-flex align-items-center">
+                  <Linkedin size={14} className="me-2 text-muted" />
+                  <a 
+                    href={contact.linkedin.startsWith('http') ? contact.linkedin : `https://${contact.linkedin}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-decoration-none"
+                  >
+                    {contact.linkedin}
+                  </a>
+                </div>
+              )}
+              {contact.location && (
+                <div className="d-flex align-items-center">
+                  <MapPin size={14} className="me-2 text-muted" />
+                  <span>{contact.location}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Skills */}
         {application.resumes?.analysis_data?.skills && (
           <div className="mb-3">
@@ -117,38 +178,38 @@ const ApplicationReviewCard = ({ application }) => {
         )}
 
         {application.match_details && (
-  <div className="mt-3">
-    <h6 className="fw-bold mb-2">Match Analysis</h6>
-    
-    {application.match_details.matchedSkills?.length > 0 && (
-      <div className="mb-2">
-        <small className="text-success fw-semibold">Matched Skills:</small>
-        <div className="d-flex flex-wrap gap-1 mt-1">
-          {application.match_details.matchedSkills.map((skill, idx) => (
-            <span key={idx} className="badge bg-success">{skill}</span>
-          ))}
-        </div>
-      </div>
-    )}
-    
-    {application.match_details.missingSkills?.length > 0 && (
-      <div className="mb-2">
-        <small className="text-warning fw-semibold">Missing Skills:</small>
-        <div className="d-flex flex-wrap gap-1 mt-1">
-          {application.match_details.missingSkills.map((skill, idx) => (
-            <span key={idx} className="badge bg-warning">{skill}</span>
-          ))}
-        </div>
-      </div>
-    )}
-    
-    {application.match_details.recommendation && (
-      <div className="alert alert-info small mb-0 mt-2">
-        <strong>AI Recommendation:</strong> {application.match_details.recommendation}
-      </div>
-    )}
-  </div>
-)}
+          <div className="mt-3">
+            <h6 className="fw-bold mb-2">Match Analysis</h6>
+            
+            {application.match_details.matchedSkills?.length > 0 && (
+              <div className="mb-2">
+                <small className="text-success fw-semibold">Matched Skills:</small>
+                <div className="d-flex flex-wrap gap-1 mt-1">
+                  {application.match_details.matchedSkills.map((skill, idx) => (
+                    <span key={idx} className="badge bg-success">{skill}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {application.match_details.missingSkills?.length > 0 && (
+              <div className="mb-2">
+                <small className="text-warning fw-semibold">Missing Skills:</small>
+                <div className="d-flex flex-wrap gap-1 mt-1">
+                  {application.match_details.missingSkills.map((skill, idx) => (
+                    <span key={idx} className="badge bg-warning">{skill}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {application.match_details.recommendation && (
+              <div className="alert alert-info small mb-0 mt-2">
+                <strong>AI Recommendation:</strong> {application.match_details.recommendation}
+              </div>
+            )}
+          </div>
+        )}
 
         <hr />
 
@@ -191,7 +252,6 @@ const ApplicationReviewCard = ({ application }) => {
             rel="noopener noreferrer"
             className="btn btn-sm btn-outline-secondary"
           >
-            {console.log("Resume URL:", application.resumes?.resume_url)}
             <Download size={16} className="me-1" />
             Download Resume
           </a>

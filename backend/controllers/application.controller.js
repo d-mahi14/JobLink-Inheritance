@@ -147,12 +147,6 @@ export const getJobApplications = async (req, res) => {
       .from('applications')
       .select(`
         *,
-        id,
-        candidate_id,
-        status,
-        match_score,
-        match_details,
-        applied_at,
         profiles!applications_candidate_id_fkey(
           id,
           full_name,

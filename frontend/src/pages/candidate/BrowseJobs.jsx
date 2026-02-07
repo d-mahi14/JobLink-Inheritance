@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Briefcase, Filter, SlidersHorizontal } from 'lucide-react';
+import { Search, Briefcase } from 'lucide-react';
 import { useJobStore } from '../../store/jobStore';
 import { useResumeStore } from '../../store/resumeStore';
 import JobCard from '../../components/candidate/JobCard';
@@ -9,7 +9,6 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner';
 const BrowseJobs = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
   const { jobs, fetchAllJobs, isLoading, pagination } = useJobStore();
   const { fetchMyResumes, resumes } = useResumeStore();
 
@@ -45,12 +44,12 @@ const BrowseJobs = () => {
             )}
           </div>
 
-          {/* Search and Filters */}
+          {/* Search Only - Filters Removed */}
           <div className="card shadow-sm mb-4">
             <div className="card-body">
               <form onSubmit={handleSearch}>
                 <div className="row g-3">
-                  <div className="col-md-9">
+                  <div className="col-12">
                     <div className="input-group input-group-lg">
                       <span className="input-group-text bg-white">
                         <Search size={20} />
@@ -58,61 +57,18 @@ const BrowseJobs = () => {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="Search by job title, skills, or company..."
+                        placeholder="Search by job title "
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
+                      <button type="submit" className="btn btn-primary">
+                        <Search size={18} className="me-2" />
+                        Search
+                      </button>
                     </div>
-                  </div>
-                  <div className="col-md-3 d-grid gap-2 d-md-flex">
-                    <button type="submit" className="btn btn-primary btn-lg flex-fill">
-                      <Search size={18} className="me-2" />
-                      Search
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="btn btn-outline-secondary btn-lg"
-                    >
-                      <SlidersHorizontal size={18} />
-                    </button>
                   </div>
                 </div>
               </form>
-
-              {showFilters && (
-                <div className="mt-3 pt-3 border-top">
-                  <div className="row g-3">
-                    <div className="col-md-4">
-                      <label className="form-label small fw-semibold">Location</label>
-                      <select className="form-select">
-                        <option>All Locations</option>
-                        <option>Remote</option>
-                        <option>On-site</option>
-                        <option>Hybrid</option>
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label small fw-semibold">Experience Level</label>
-                      <select className="form-select">
-                        <option>All Levels</option>
-                        <option>Entry Level</option>
-                        <option>Mid Level</option>
-                        <option>Senior Level</option>
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="form-label small fw-semibold">Salary Range</label>
-                      <select className="form-select">
-                        <option>Any Salary</option>
-                        <option>$50k - $75k</option>
-                        <option>$75k - $100k</option>
-                        <option>$100k+</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -132,7 +88,6 @@ const BrowseJobs = () => {
                 <p className="text-muted mb-0">
                   Showing <strong>{jobs.length}</strong> of <strong>{pagination.total}</strong> jobs
                 </p>
-                
               </div>
             </div>
           </div>
