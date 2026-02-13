@@ -92,15 +92,18 @@ const Footer = () => {
               © {new Date().getFullYear()} JobLink. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm">
-              <Link to="/" className="text-gray-600 hover:text-gray-900 transition-colors">
+              <Link to="/privacy-policy" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Privacy Policy
               </Link>
-              <Link to="/" className="text-gray-600 hover:text-gray-900 transition-colors">
+
+              <Link to="/terms-of-service" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Terms of Service
               </Link>
-              <Link to="/" className="text-gray-600 hover:text-gray-900 transition-colors">
+
+              <Link to="/contact" className="text-gray-600 hover:text-gray-900 transition-colors">
                 Contact Us
               </Link>
+
             </div>
           </div>
         </div>

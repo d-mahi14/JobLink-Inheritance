@@ -6,6 +6,12 @@ import Sidebar from './components/layout/Sidebar';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import { useAuth } from './hooks/useAuth';
 
+// Legal / Info Pages
+import PrivacyPolicy from './pages/public/PrivacyPolicy';
+import TermsOfService from './pages/public/TermsOfService';
+import Contact from './pages/public/Contact';
+
+
 // Public Pages
 import LandingPage from './pages/public/LandingPage';
 import LoginPage from './pages/public/LoginPage';
@@ -43,6 +49,10 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/contact" element={<Contact />} />
+
 
               {/* Candidate Routes */}
               <Route
@@ -136,6 +146,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              
 
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
