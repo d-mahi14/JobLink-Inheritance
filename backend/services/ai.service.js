@@ -99,6 +99,9 @@ const extractSkillsFallback = (text) => {
     "Flask",
     "Django",
     "FastAPI",
+    "Kaggle",
+    "TensorFlow",
+    "Jupyter",
   ];
 
   return [
@@ -205,21 +208,22 @@ export const calculateMatchScore = async (resumeAnalysisData, jobPosting) => {
     model: "llama-3.3-70b-versatile",
     temperature: 0.3,
     max_tokens: 1000,
+    response_format: { type: "json_object" },
     messages: [
       {
         role: "system",
         content: `
-Return ONLY valid JSON.
+Return ONLY valid JSON in this exact format:
 
 {
-  "matchScore": 85,
+  "matchScore": 0,
   "matchedSkills": [],
   "missingSkills": [],
   "strengths": [],
   "weaknesses": [],
   "recommendation": ""
 }
-`,
+        `,
       },
       {
         role: "user",
@@ -229,17 +233,24 @@ ${JSON.stringify(resumeAnalysisData)}
 
 JOB:
 ${JSON.stringify(jobPosting)}
-`,
+        `,
       },
     ],
   });
 
+  console.log("RAW AI OUTPUT:", completion.choices?.[0]?.message?.content);
+
+  let aiMatch = null;
   try {
-    return JSON.parse(completion.choices[0].message.content);
-  } catch {
-    return calculateMatchScoreFallback(resumeAnalysisData, jobPosting);
+    aiMatch = completion.choices?.[0]?.message?.content;
+    if (typeof aiMatch === "string") aiMatch = JSON.parse(aiMatch);
+  } catch (err) {
+    console.error("AI JSON parse failed:", err);
   }
+
+  return aiMatch || calculateMatchScoreFallback(resumeAnalysisData, jobPosting);
 };
+
 
 /* =====================================================
    FALLBACKS
