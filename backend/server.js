@@ -17,11 +17,10 @@ import { requestLogger } from './lib/logger.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: process.env.CLIENT_URL || '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -42,8 +41,8 @@ app.use('/api/applications', applicationRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
+  res.status(200).json({
+    status: 'ok',
     message: 'Server is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
@@ -52,16 +51,9 @@ app.get('/health', (req, res) => {
 
 // Root endpoint
 app.get('/', (req, res) => {
-  res.status(200).json({ 
+  res.status(200).json({
     message: 'Resume Analyzer API',
-    version: '1.0.0',
-    endpoints: {
-      health: '/health',
-      auth: '/api/auth',
-      resumes: '/api/resumes',
-      jobs: '/api/jobs',
-      applications: '/api/applications'
-    }
+    version: '1.0.0'
   });
 });
 
@@ -71,18 +63,5 @@ app.use(notFound);
 // Global error handling middleware
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`
-╔═══════════════════════════════════════╗
-║   Resume Analyzer API Server         ║
-╠═══════════════════════════════════════╣
-║   Port: ${PORT.toString().padEnd(28)} ║
-║   Environment: ${(process.env.NODE_ENV || 'development').padEnd(21)} ║
-║   Time: ${new Date().toLocaleTimeString().padEnd(26)} ║
-╚═══════════════════════════════════════╝
-  `);
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`💚 Health check: http://localhost:${PORT}/health`);
-  console.log(`📚 API docs: http://localhost:${PORT}/`);
-});
+// IMPORTANT: Export instead of listen()
+export default app;
