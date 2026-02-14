@@ -71,14 +71,7 @@ The platform uses intelligent algorithms to extract skills from resumes, match c
 
 ### Frontend
 - **React 18.3.1** - UI library
-- **React Router DOM 6.22** - Client-side routing
-- **Zustand 4.5** - State management
-- **Axios 1.6.7** - HTTP client
 - **Tailwind CSS 3.4.1** - Utility-first CSS
-- **DaisyUI 4.12.24** - Component library
-- **Lucide React 0.344** - Icon library
-- **React Hot Toast 2.4.1** - Notifications
-- **Bootstrap 5.3.8** - Additional UI components
 - **Vite 5.1.4** - Build tool and dev server
 
 ### Backend (Expected)
@@ -90,7 +83,6 @@ The platform uses intelligent algorithms to extract skills from resumes, match c
 - **AI/ML Services** - Resume parsing and skill extraction
 
 ### Development Tools
-- **ESLint** - Code linting
 - **PostCSS** - CSS processing
 - **Autoprefixer** - CSS vendor prefixing
 
